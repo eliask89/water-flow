@@ -53,18 +53,18 @@ style = {'margin':'auto','width': '50%'})
 
 def update_graph(station_number):
 
-    # Url för att hämta data
+    # Url to fetch the data
     url_first_part = 'https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/1/station/'
     url_second_part = '/period/corrected-archive/data.csv'
     url = url_first_part + str(station_number) + url_second_part
 
-    # Läser in data från angiven länk och rensar sedan upp
+    # Read the data from the csv-file and sort out everything unneccesary
     df = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
     df_temp = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
     df = df.iloc[20:]
     df.drop(df.columns[[2, 3]], axis=1, inplace=True)
 
-    #Döper om kolumner
+    #Rename columns
     df.columns = ['date', 'flow']
 
     #Set x-axis to datetime format and fetch the date of the last entry
