@@ -6,17 +6,12 @@ import pandas as pd, datetime as dt
 
 
 
-
-#Sök igenom projektmappen för att hitta alla .csv-filer som hämtats från request_csv-modulen
-#Jämför träffarna med listan på filnamn för att rensa ut alla alternativ där en .csv-fil
-
+#Read the register over the different stations for measurement, remove all which didnt result in a  200 status code on the register_request_status_check.py
 df = pd.read_excel("register.xlsx")
 df = df[df.status_code == 200]
 df.reset_index(inplace=True)
-print(df['status_code'])
 
-
-#Hämtar en css-mall för webappen.
+#Fetch a css template
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -26,10 +21,11 @@ colors = {
     'text': '#7FDBFF'
 }
 
-
+#Create a layout for the app
 app.layout = html.Div(children=[
     html.H1(children='Svenska flöden'),
 
+    #Drop down list with all stations included
     dcc.Dropdown(
         id='choice',
         options=[{'label': str(df.station_name[i] + ', ' + df.river_name[i]), 'value': df.station_number[i]} for i
@@ -38,6 +34,7 @@ app.layout = html.Div(children=[
         searchable=True
     ),
 
+    #Graph of the sorted data from the url
     dcc.Graph(
         id='graph',
         style={
@@ -48,8 +45,7 @@ app.layout = html.Div(children=[
 ],
 style = {'margin':'auto','width': '50%'})
 
-#En callback för att uppdatera grafen beroende på vilket alternativ som väljs i droplistan.
-#Den efterföljande funktionen läser in csv-filen för det valda alternativet och hanterar all data för att göra det presentabelt.
+#Callback function to fetch data depending on witch station was selected from the drop down menu.
 @app.callback(
     Output('graph', 'figure'),
     [Input('choice', 'value')],
@@ -62,13 +58,13 @@ def update_graph(station_number):
     url_second_part = '/period/corrected-archive/data.csv'
     url = url_first_part + str(station_number) + url_second_part
 
-    # Import data and clean the file from junk, make 2 dataframes to be able to compare years
+    # Läser in data från angiven länk och rensar sedan upp
     df = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
     df_temp = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
     df = df.iloc[20:]
     df.drop(df.columns[[2, 3]], axis=1, inplace=True)
 
-    #Rename columns
+    #Döper om kolumner
     df.columns = ['date', 'flow']
 
     #Set x-axis to datetime format and fetch the date of the last entry
@@ -85,7 +81,7 @@ def update_graph(station_number):
 
     x_max = df.date.max() + dt.timedelta(days=14)
 
-
+    #Return all neccesary data for the graph
     return {
         'data': [
             {'x': df.date, 'y': df.flow, 'type': 'line', 'name': 'Aktuellt datum'},
