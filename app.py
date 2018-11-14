@@ -1,26 +1,19 @@
-import dash, requests
+import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import pandas as pd, datetime as dt
-from os import listdir
 
 
-#Skapa en lista med filnamn från registret över alla mätstationer som kan hämtas hos SMHI
-#Listan används för att generera alla namn över vattendragen som visas i droplistan.
-def find_csv_filenames(path_to_dir, suffix=".csv"):
-    filenames = listdir(path_to_dir)
-    return [ filename for filename in filenames if filename.endswith( suffix ) ]
+
 
 #Sök igenom projektmappen för att hitta alla .csv-filer som hämtats från request_csv-modulen
 #Jämför träffarna med listan på filnamn för att rensa ut alla alternativ där en .csv-fil
-my_path = 'E:\Projects\WaterFlow'
-csv_files = find_csv_filenames(my_path)
-df = pd.read_excel("Grundnät-WQ-utökad.xls")
-df['filename'] = df['station_number'].astype(str) + ".csv"
-df = df[df['filename'].isin(csv_files)]
+
+df = pd.read_excel("register.xlsx")
+df = df[df.status_code == 200]
 df.reset_index(inplace=True)
-print(df['filename'])
+print(df['status_code'])
 
 
 #Hämtar en css-mall för webappen.
@@ -39,7 +32,7 @@ app.layout = html.Div(children=[
 
     dcc.Dropdown(
         id='choice',
-        options=[{'label': str(df.station_name[i] + ', ' + df.river_name[i]), 'value': df.filename[i]} for i
+        options=[{'label': str(df.station_name[i] + ', ' + df.river_name[i]), 'value': df.station_number[i]} for i
                  in
                  range(len(df.index))],
         searchable=True
@@ -62,11 +55,16 @@ style = {'margin':'auto','width': '50%'})
     [Input('choice', 'value')],
     )
 
-def update_graph(filename):
+def update_graph(station_number):
+
+    # Url för att hämta data
+    url_first_part = 'https://opendata-download-hydroobs.smhi.se/api/version/1.0/parameter/1/station/'
+    url_second_part = '/period/corrected-archive/data.csv'
+    url = url_first_part + str(station_number) + url_second_part
 
     # Import data and clean the file from junk, make 2 dataframes to be able to compare years
-    df = pd.read_csv(filename, sep=';', header=None, error_bad_lines=False, skiprows=20)
-    df_temp = pd.read_csv(filename, sep=';', header=None, error_bad_lines=False, skiprows=20)
+    df = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
+    df_temp = pd.read_csv(url, sep=';', header=None, error_bad_lines=False, skiprows=20)
     df = df.iloc[20:]
     df.drop(df.columns[[2, 3]], axis=1, inplace=True)
 
@@ -76,7 +74,7 @@ def update_graph(filename):
     #Set x-axis to datetime format and fetch the date of the last entry
     df['date'] = pd.to_datetime(df['date'])
 
-    #CLean the second dataframe from junk
+    #Clean the second dataframe from junk
     df_temp = df_temp.iloc[20:]
     df_temp.drop(df_temp.columns[[2, 3]], axis=1, inplace=True)
 
@@ -94,7 +92,7 @@ def update_graph(filename):
             {'x': df_temp.date, 'y': df.flow, 'type': 'line', 'name': 'Föregående år', 'line': {'color': 'red', 'dash': 'dash'}},
         ],
         'layout': {
-            'title': str('Vattenföring i ' + filename),
+            'title': str('Vattenföring i ' + str(station_number)),
             'xaxis': {'range': [x_max-dt.timedelta(days=379), x_max], 'title': 'Datum'},
             'yaxis': {'title': 'Vattenföring (m3/s)'},
             'legend': {'x': 0, 'y': 1}
