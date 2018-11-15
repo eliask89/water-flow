@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output
 import pandas as pd, datetime as dt
 import os
 
-port = int(os.environ.get("PORT", 5000))
+port = int(os.environ.get("PORT", 8000))
 
 #Read the register over the different stations for measurement, remove all which didnt result in a  200 status code on the register_request_status_check.py
 df = pd.read_excel("register.xlsx")
