@@ -5,8 +5,6 @@ from dash.dependencies import Input, Output
 import pandas as pd, datetime as dt
 import os
 
-port = int(os.environ.get("PORT", 8000))
-
 #Read the register over the different stations for measurement, remove all which didnt result in a  200 status code on the register_request_status_check.py
 df = pd.read_excel("register.xlsx")
 df = df[df.status_code == 200]
@@ -16,7 +14,8 @@ df.reset_index(inplace=True)
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app.run(debug=True, host='0.0.0.0', port=port)
+server = app.server
+
 
 colors = {
     'background': '#111111',
