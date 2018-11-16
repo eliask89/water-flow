@@ -3,14 +3,15 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import pandas as pd, datetime as dt
-from flask import Flask
+import os
 
 
 #Fetch a css template
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-server = Flask('water-flow')
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server=app.server
+server.secret_key = os.environ.get('secret_key', 'secret')
 
 
 #Read the register over the different stations for measurement, remove all which didnt result in a  200 status code on the register_request_status_check.py
